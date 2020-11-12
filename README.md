@@ -6,6 +6,8 @@
 
 ## Usage
 
+참고 : https://www.thethingsnetwork.org/docs/applications/golang/quick-start.html
+
 Assuming you're working on a project `github.com/your-username/your-project`:
 
 ```

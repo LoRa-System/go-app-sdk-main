@@ -26,20 +26,24 @@ func main() {
 	// 로깅 : 애플리케이션 프로그램의 표준 출력 기록
 	log := apex.Stdout() // We use a cli logger at Stdout
 	ttnlog.Set(log)      // Set the logger as default for TTN
-	
+
 	// 환경변수 -> 애플리케이션 ID, 액세스 키 가져옴
 	appID := os.Getenv("TTN_APP_ID")
 	appAccessKey := os.Getenv("TTN_APP_ACCESS_KEY")
+
+	// 디버깅으로 출력하는거임
+	log.Debug(appID + " " + appAccessKey)
 
 	// 공용 커뮤니티 네트워크에 연결할 새 SDK 구성
 	config := ttnsdk.NewCommunityConfig(sdkClientName)
 	config.ClientVersion = "2.0.5" // The version of the application
 
-
 	/* 새 SDK 클라이언트 생성 */
 	client := config.NewClient(appID, appAccessKey)
 	// 프로그램 종료 전, 클라이언트 정리 유무 확인
 	defer client.Close()
+
+	log.Debug("여기가 에러냐?")
 
 	/* 새 장치 추가 -> SDK에서 장치관리자를 호출 */
 	devices, err := client.ManageDevices()
@@ -47,6 +51,7 @@ func main() {
 	  log.WithError(err).Fatalf("%s: could not read CA certificate file", sdkClientName)
 	}
 
+	/* 새 장치 정보 입력 부분 */
 	dev := new(ttnsdk.Device)
 	dev.AppID = appID
 	dev.DevID = "my-new-device"
@@ -77,6 +82,16 @@ func main() {
 	// 애플리케이션 내의 모든 장치에 대한 활성화를 받기를 원하면 AllDevices()
 	allDevicesPubSub := pubsub.AllDevices()
 
+	// List the first 10 devices
+	/*deviceList, err := devices.List(10, 0)
+	if err != nil {
+		log.WithError(err).Fatal("my-amazing-app: could not get devices")
+	}
+	log.Info("my-amazing-app: found devices")
+	for _, device := range deviceList {
+		fmt.Printf("- %s", device.DevID)
+	}*/
+
 	// 장치 활성화에 가입 가능 -> 장치 연결 성공 시 콘솔 출력
 	activations, err := allDevicesPubSub.SubscribeActivations()
 	if err != nil {
@@ -98,8 +113,10 @@ func main() {
 		log.WithError(err).Fatalf("%s: could not unsubscribe from activations", sdkClientName)
 	}
 
+	// 생성한 장치 선택
 	myNewDevicePubSub := pubsub.Device("my-new-device")
 
+	// 업링크 메시지 구독 -> 도착하면 콘솔에 출력
 	uplink, err := myNewDevicePubSub.SubscribeUplink()
 	if err != nil {
 		log.WithError(err).Fatalf("%s: could not subscribe to uplink messages", sdkClientName)
@@ -111,17 +128,13 @@ func main() {
 		}
 	}()
 
-	uplink, err := myNewDevicePubSub.SubscribeUplink()
+	/* 구독 취소 */
+	/*err = myNewDevicePubSub.UnsubscribeUplink()
 	if err != nil {
-		log.WithError(err).Fatalf("%s: could not subscribe to uplink messages", sdkClientName)
-	}
-	go func() {
-		for message := range uplink {
-			hexPayload := hex.EncodeToString(message.PayloadRaw)
-			log.WithField("data", hexPayload).Infof("%s: received uplink", sdkClientName)
-		}
-	}()
+		log.WithError(err).Fatalf("%s: could not unsubscribe from uplink", sdkClientName)
+	}*/
 
+	/* 다운링크 메시지 게시 -> 페이로드 "AABC"를 포트 10으로 전송 */
 	err = myNewDevicePubSub.Publish(&types.DownlinkMessage{
 		PayloadRaw: []byte{0xaa, 0xbc},
 		FPort:      10,
@@ -129,5 +142,4 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatalf("%s: could not schedule downlink message", sdkClientName)
 	}
-
 }

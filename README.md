@@ -11,10 +11,22 @@
 Assuming you're working on a project `github.com/your-username/your-project`:
 
 ```
-cd your-project
-go mod init github.com/your-username/your-project
-go get github.com/TheThingsNetwork/go-app-sdk
+sudo apt update
+sudo apt upgrade
+sudo apt-get install golang
+
+mkdir -p $GOPATH/src/github.com/YOUR_USERNAME/ttn-app
+cd $GOPATH/src/github.com/YOUR_USERNAME/ttn-app
+
+go get -u github.com/TheThingsNetwork/go-app-sdk/...
+
+sudo apt-get install govendor
+cd $GOPATH/src/github.com/TheThingsNetwork/go-app-sdk
+govendor init
+govendor sync
 ```
+
+main.go upload!
 
 See the examples [on GoDoc](https://godoc.org/github.com/TheThingsNetwork/go-app-sdk#example-package).
 
